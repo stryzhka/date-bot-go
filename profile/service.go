@@ -1,10 +1,16 @@
 package profile
 
-import "date-bot-go/profile/models"
+import (
+	"context"
+	"date-bot-go/profile/models"
+)
 
 type Service interface {
-	CreateProfile(profile *models.Profile) error
-	GetProfileById(id string) (*models.Profile, string)
-	UpdateProfileById(id string, profile *models.Profile) error
-	DeleteProfileById(id string) error
+	Create(
+		ctx context.Context, userId, name, gender, description string,
+	) error
+	GetById(ctx context.Context, id string) *models.Profile
+	GetAll(ctx context.Context) []models.Profile
+	UpdateById(ctx context.Context, id string, newProfile *models.Profile) error
+	DeleteById(ctx context.Context, id string) error
 }
