@@ -60,3 +60,53 @@ func (r *PostgresProfileRepository) Get(ctx context.Context, id string) *models.
 	}
 	return profile
 }
+
+func (r *PostgresProfileRepository) GetAll(ctx context.Context) []models.Profile {
+	var profiles []models.Profile
+	rows, err := r.db.Query(`select id, user_id, name, gender, description, date_created, photo_path from profiles`)
+	if err != nil {
+		return profiles
+	}
+	for rows.Next() {
+		profile := &models.Profile{}
+		err := rows.Scan(&profile.Id, &profile.UserId, &profile.Name, &profile.Gender, &profile.Description, &profile.DateCreated, &profile.PhotoPath)
+		if err != nil {
+			return profiles
+		}
+		profiles = append(profiles, *profile)
+	}
+	return profiles
+}
+
+// TODO all updates
+func (r *PostgresProfileRepository) UpdateById(ctx context.Context, id string, newProfile *models.Profile) error {
+	result, err := r.db.Exec(
+		`update profiles set name = $1, gender = $2, description = $3 where user_id = $4`, newProfile.Name, newProfile.Gender, newProfile.Description, id,
+	)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return profile2.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *PostgresProfileRepository) DeleteById(ctx context.Context, id string) error {
+	result, err := r.db.Exec(
+		`delete from profiles where user_id = $1`, id,
+	)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return profile2.ErrUserNotFound
+	}
+
+	return nil
+}

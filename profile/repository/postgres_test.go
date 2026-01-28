@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"date-bot-go/profile"
 	"date-bot-go/profile/models"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -60,7 +61,7 @@ func createSchema(t *testing.T, db *sql.DB) {
 	require.NoError(t, err)
 }
 
-func TestPostgresSuccessCreate(t *testing.T) {
+func TestSuccessCreate(t *testing.T) {
 	db, cleanup := setupDB(t)
 	defer cleanup()
 	repo := NewPostgresProfileRepository(db)
@@ -82,7 +83,8 @@ func TestPostgresSuccessCreate(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
-func TestPostgresEmptyFieldsCreate(t *testing.T) {
+func TestEmptyFieldsCreate(t *testing.T) {
+	// не будет работать никогда
 	db, cleanup := setupDB(t)
 	defer cleanup()
 	repo := NewPostgresProfileRepository(db)
@@ -100,7 +102,7 @@ func TestPostgresEmptyFieldsCreate(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestPostgresErrUserAlreadyExistsCreate(t *testing.T) {
+func TestErrUserAlreadyExistsCreate(t *testing.T) {
 	db, cleanup := setupDB(t)
 	defer cleanup()
 	repo := NewPostgresProfileRepository(db)
@@ -124,7 +126,7 @@ func TestPostgresErrUserAlreadyExistsCreate(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
-func TestPostgresSuccessGet(t *testing.T) {
+func TestSuccessGet(t *testing.T) {
 	db, cleanup := setupDB(t)
 	defer cleanup()
 	repo := NewPostgresProfileRepository(db)
@@ -157,10 +159,107 @@ func TestPostgresSuccessGet(t *testing.T) {
 	assert.Equal(t, profile.DateCreated.Day(), gotProfile.DateCreated.Day())
 }
 
-func TestPostgresNilGet(t *testing.T) {
+func TestNilGet(t *testing.T) {
 	db, cleanup := setupDB(t)
 	defer cleanup()
 	repo := NewPostgresProfileRepository(db)
 	profile := repo.Get(context.Background(), "123")
 	assert.Nil(t, profile)
+}
+
+func TestSuccessGetAll(t *testing.T) {
+	db, cleanup := setupDB(t)
+	defer cleanup()
+	repo := NewPostgresProfileRepository(db)
+	for range 3 {
+		err := repo.Create(context.Background(), &models.Profile{
+			Id:          uuid.New(),
+			UserId:      uuid.New().String(),
+			Name:        "test",
+			Gender:      "f",
+			Description: "test test test",
+			Topics:      nil,
+			DateCreated: time.Now(),
+			PhotoPath:   "",
+		})
+		assert.NoError(t, err)
+	}
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM profiles").Scan(&count)
+	require.NoError(t, err)
+	assert.Equal(t, 3, count)
+}
+
+func TestSuccessUpdateById(t *testing.T) {
+	db, cleanup := setupDB(t)
+	defer cleanup()
+	repo := NewPostgresProfileRepository(db)
+	profile := &models.Profile{
+		Id:          uuid.New(),
+		UserId:      "123",
+		Name:        "test",
+		Gender:      "f",
+		Description: "test test test",
+		Topics:      nil,
+		DateCreated: time.Now(),
+		PhotoPath:   "",
+	}
+	newProfile := &models.Profile{
+		Name:        "super test",
+		Gender:      "m",
+		Description: "test test test test",
+	}
+	err := repo.Create(context.Background(), profile)
+	assert.NoError(t, err)
+	err = repo.UpdateById(context.Background(), "123", newProfile)
+	assert.NoError(t, err)
+	assert.Equal(t, "super test", repo.Get(context.Background(), "123").Name)
+	//fmt.Println(repo.Get(context.Background(), "123"))
+}
+
+func TestErrUserNotFoundUpdateById(t *testing.T) {
+	db, cleanup := setupDB(t)
+	defer cleanup()
+	repo := NewPostgresProfileRepository(db)
+	err := repo.UpdateById(context.Background(), "123", &models.Profile{
+		Id:          uuid.UUID{},
+		UserId:      "",
+		Name:        "",
+		Gender:      "",
+		Description: "",
+		Topics:      nil,
+		DateCreated: time.Time{},
+		PhotoPath:   "",
+	})
+	assert.Error(t, err)
+	assert.Equal(t, profile.ErrUserNotFound, err)
+}
+
+func TestSuccessDeleteById(t *testing.T) {
+	db, cleanup := setupDB(t)
+	defer cleanup()
+	repo := NewPostgresProfileRepository(db)
+	profile := &models.Profile{
+		Id:          uuid.New(),
+		UserId:      "123",
+		Name:        "test",
+		Gender:      "f",
+		Description: "test test test",
+		Topics:      nil,
+		DateCreated: time.Now(),
+		PhotoPath:   "",
+	}
+	err := repo.Create(context.Background(), profile)
+	assert.NoError(t, err)
+	err = repo.DeleteById(context.Background(), "123")
+	assert.NoError(t, err)
+}
+
+func TestErrUserNotFoundDeleteById(t *testing.T) {
+	db, cleanup := setupDB(t)
+	defer cleanup()
+	repo := NewPostgresProfileRepository(db)
+	err := repo.DeleteById(context.Background(), "123")
+	assert.Error(t, err)
+	assert.Equal(t, err, profile.ErrUserNotFound)
 }

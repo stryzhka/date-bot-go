@@ -25,7 +25,7 @@ func (r *MockRepository) GetAll(ctx context.Context) []models.Profile {
 	return args.Get(0).([]models.Profile)
 }
 
-func (r *MockRepository) UpdateById(ctx context.Context, id string, profile *models.Profile) error {
+func (r *MockRepository) UpdateById(ctx context.Context, id string, newProfile *models.Profile) error {
 	args := r.Called(id, profile)
 	return args.Error(0)
 }
