@@ -38,7 +38,7 @@ func (s *MatchingService) Like(ctx context.Context, userId, likedId string) erro
 	return err
 }
 
-func (s *MatchingService) NextProfile(ctx context.Context, userId string) *models.Profile {
+func (s *MatchingService) NextProfile(ctx context.Context, userId string) (*models.Profile, error) {
 	//???
 	return s.profileProvider.GetCandidate(ctx, userId)
 }

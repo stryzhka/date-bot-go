@@ -45,8 +45,9 @@ func TestNextProfile(t *testing.T) {
 	r := new(mock.MockRepository)
 	profileProvider := new(mockProvider.MockProfileProvider)
 	userId := "123"
-	profileProvider.On("GetCandidate", userId).Return(&models.Profile{})
+	profileProvider.On("GetCandidate", userId).Return(&models.Profile{}, nil)
 	s := NewMatchingService(r, profileProvider)
-	expectedProfile := s.NextProfile(context.Background(), userId)
+	expectedProfile, err := s.NextProfile(context.Background(), userId)
+	assert.NoError(t, err)
 	assert.IsType(t, expectedProfile, &models.Profile{})
 }

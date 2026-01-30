@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package profile;
+option go_package = "date-bot-go/pkg/profilepb";
+
+service ProfileService {
+  rpc GetAll(GetAllRequest) returns (GetAllResponse);
+}
+
+message GetAllRequest {}
+
+message GetAllResponse {
+  repeated ProfileDTO profiles = 1;
+}
+
+message ProfileDTO {
+  string UserId = 1;
+  string Username = 2;
+  string Name = 3;
+  string Gender = 4;
+  string Description = 5;
+  string PhotoPath = 8;
+}
+

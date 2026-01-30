@@ -7,5 +7,5 @@ import (
 
 type Service interface {
 	Like(ctx context.Context, userId, likedId string) error
-	NextProfile(ctx context.Context) *models.Profile
+	NextProfile(ctx context.Context) (*models.Profile, error)
 }

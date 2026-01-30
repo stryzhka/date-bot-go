@@ -7,5 +7,5 @@ import (
 
 type ProfileProvider interface {
 	//TODO all...
-	GetCandidate(ctx context.Context, excludeId string) *models.Profile
+	GetCandidate(ctx context.Context, excludeId string) (*models.Profile, error)
 }
