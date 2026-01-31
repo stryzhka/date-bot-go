@@ -24,7 +24,7 @@ func (p *GrpcProfileProvider) GetCandidate(ctx context.Context, excludeId string
 	resp, err := p.client.GetAll(ctx, req)
 	profile := &models.Profile{
 		UserId:      resp.Profiles[0].UserId,
-		Username:    "test",
+		Username:    "returned",
 		Name:        resp.Profiles[0].Name,
 		Gender:      resp.Profiles[0].Gender,
 		Description: resp.Profiles[0].Description,

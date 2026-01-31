@@ -21,6 +21,10 @@ func (s *MatchingService) Like(ctx context.Context, userId, likedId string) erro
 		UserId:  userId,
 		LikedId: likedId,
 	}
+	like1 := &models.Like{
+		UserId:  likedId,
+		LikedId: userId,
+	}
 	mutual, err := s.r.IsMutual(ctx, like)
 	if err != nil {
 		return err
@@ -28,8 +32,8 @@ func (s *MatchingService) Like(ctx context.Context, userId, likedId string) erro
 	if mutual {
 		//--send link to likedId
 		//--send link to userId
-		err = s.r.DeleteLike(ctx, userId)
-		err = s.r.DeleteLike(ctx, likedId)
+		err = s.r.DeleteLike(ctx, like)
+		err = s.r.DeleteLike(ctx, like1)
 		return err
 	}
 	err = s.r.AddLike(ctx, like)

@@ -7,6 +7,6 @@ import (
 
 type Repository interface {
 	AddLike(ctx context.Context, like *models.Like) error
-	DeleteLike(ctx context.Context, userId string) error
+	DeleteLike(ctx context.Context, like *models.Like) error
 	IsMutual(ctx context.Context, like *models.Like) (bool, error)
 }
