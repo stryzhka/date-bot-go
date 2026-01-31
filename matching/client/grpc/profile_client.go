@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 	"date-bot-go/matching/models"
-	"date-bot-go/pkg/date-bot-go/pkg/profilepb"
+	"date-bot-go/pkg/profilepb"
 	"google.golang.org/grpc"
 )
 

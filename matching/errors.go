@@ -4,5 +4,6 @@ import "errors"
 
 var (
 	ErrUserNotFound = errors.New("User not found")
-	//Err
+	ErrAlreadyLiked = errors.New("Already liked")
+	ErrLikeNotFound = errors.New("Like not found")
 )
