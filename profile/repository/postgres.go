@@ -62,6 +62,7 @@ func (r *PostgresProfileRepository) Get(ctx context.Context, id string) *models.
 }
 
 func (r *PostgresProfileRepository) GetAll(ctx context.Context) []models.Profile {
+	//TODO CACHE!!!
 	var profiles []models.Profile
 	rows, err := r.db.Query(`select id, user_id, name, gender, description, date_created, photo_path from profiles`)
 	if err != nil {
