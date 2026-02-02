@@ -41,7 +41,7 @@ func (r *PostgresMatchingRepository) DeleteLike(ctx context.Context, like *model
 	//оди
 	result, err := r.db.Exec(
 		`delete from likes where user_id = $1`,
-		like.UserId, like.LikedId,
+		like.UserId,
 	)
 	if err != nil {
 		return err

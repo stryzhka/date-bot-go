@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	grpc3 "date-bot-go/matching/client/grpc"
+	"date-bot-go/matching/models"
 	repository2 "date-bot-go/matching/repository"
 	service2 "date-bot-go/matching/service"
 	"date-bot-go/pkg/profilepb"
@@ -114,4 +115,79 @@ func TestCall(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "returned", expProfile.Username)
 
+}
+
+func TestProfileMatchingFlow(t *testing.T) {
+	schemaProfile := `
+		CREATE TABLE IF NOT EXISTS public.profiles
+		(
+			id uuid NOT NULL,
+			user_id text COLLATE pg_catalog."default" NOT NULL,
+			name text COLLATE pg_catalog."default" NOT NULL,
+			gender text COLLATE pg_catalog."default" NOT NULL,
+			description text COLLATE pg_catalog."default",
+			date_created date NOT NULL,
+			photo_path text COLLATE pg_catalog."default",
+			CONSTRAINT id PRIMARY KEY (id),
+			CONSTRAINT unique_profile UNIQUE (user_id)
+		);
+	`
+	schemaMatching := `
+		CREATE TABLE IF NOT EXISTS public.likes
+		(
+			user_id text COLLATE pg_catalog."default" NOT NULL,
+			liked_id text COLLATE pg_catalog."default" NOT NULL,
+			UNIQUE (user_id, liked_id)
+		);
+	`
+	db, cleanup := setupDB(t, schemaProfile)
+	createSchema(t, db, schemaMatching)
+	defer cleanup()
+	lis := bufconn.Listen(1024 * 1024)
+	profileRepository := repository.NewPostgresProfileRepository(db)
+	profileService := services.NewProfileService(profileRepository)
+	profileHandler := grpc2.NewProfileHandler(profileService)
+	grpcServer := grpc.NewServer()
+	profilepb.RegisterProfileServiceServer(grpcServer, profileHandler)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			t.Fatalf("Server exited with error %v", err)
+		}
+	}()
+	defer grpcServer.Stop()
+
+	ctx := context.Background()
+
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+		return lis.Dial()
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("Failed to dial with error %v", err)
+	}
+	defer conn.Close()
+	matchingClient := profilepb.NewProfileServiceClient(conn)
+	matchingRepository := repository2.NewPostgresMatchingRepository(db)
+	profileProvider := grpc3.NewGrpcProfileProvider(matchingClient, conn)
+	matchingService := service2.NewMatchingService(matchingRepository, profileProvider)
+
+	err = profileService.Create(ctx, "123", "test1", "f", "test test test")
+	assert.NoError(t, err)
+	err = profileService.Create(ctx, "456", "test2", "f", "test test test")
+	assert.NoError(t, err)
+	err = profileService.Create(ctx, "789", "test3", "f", "test test test")
+	assert.NoError(t, err)
+	err = profileService.Create(ctx, "321", "test4", "f", "test test test")
+	assert.NoError(t, err)
+	expProfile, err := matchingService.NextProfile(ctx, "123")
+	assert.NoError(t, err)
+	assert.IsType(t, expProfile, &models.Profile{})
+	err = matchingService.Like(ctx, "456", "123")
+	assert.NoError(t, err)
+	err = matchingService.Like(ctx, "123", "456")
+	assert.NoError(t, err)
+	err = matchingService.Like(ctx, "123", "456")
+
+	assert.NoError(t, err)
+	err = matchingService.Like(ctx, "456", "123")
+	assert.NoError(t, err)
 }

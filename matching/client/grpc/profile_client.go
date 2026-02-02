@@ -19,16 +19,20 @@ func NewGrpcProfileProvider(client profilepb.ProfileServiceClient, conn *grpc.Cl
 	}
 }
 
-func (p *GrpcProfileProvider) GetCandidate(ctx context.Context, excludeId string) (*models.Profile, error) {
+func (p *GrpcProfileProvider) GetCandidates(ctx context.Context) ([]models.Profile, error) {
 	req := &profilepb.GetAllRequest{}
 	resp, err := p.client.GetAll(ctx, req)
-	profile := &models.Profile{
-		UserId:      resp.Profiles[0].UserId,
-		Username:    "returned",
-		Name:        resp.Profiles[0].Name,
-		Gender:      resp.Profiles[0].Gender,
-		Description: resp.Profiles[0].Description,
-		PhotoPath:   resp.Profiles[0].PhotoPath,
+	var profiles []models.Profile = nil
+	for _, val := range resp.Profiles {
+		profile := &models.Profile{
+			UserId:      val.UserId,
+			Username:    val.Username,
+			Name:        val.Name,
+			Gender:      val.Gender,
+			Description: val.Description,
+			PhotoPath:   val.PhotoPath,
+		}
+		profiles = append(profiles, *profile)
 	}
-	return profile, err
+	return profiles, err
 }

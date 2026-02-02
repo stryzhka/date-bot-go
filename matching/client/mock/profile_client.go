@@ -10,7 +10,7 @@ type MockProfileProvider struct {
 	mock.Mock
 }
 
-func (p *MockProfileProvider) GetCandidate(ctx context.Context, excludeId string) (*models.Profile, error) {
-	args := p.Called(excludeId)
-	return args.Get(0).(*models.Profile), args.Error(1)
+func (p *MockProfileProvider) GetCandidates(ctx context.Context) ([]models.Profile, error) {
+	args := p.Called()
+	return args.Get(0).([]models.Profile), args.Error(1)
 }

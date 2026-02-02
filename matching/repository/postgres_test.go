@@ -144,6 +144,14 @@ func TestSuccessGetUserLikes(t *testing.T) {
 	assert.Contains(t, userLikes, "321")
 }
 
+func TestNilGetUserLikes(t *testing.T) {
+	db, cleanup := setupDB(t)
+	defer cleanup()
+	repo := NewPostgresMatchingRepository(db)
+	ids := repo.GetUserLikes(context.Background(), "123")
+	assert.Nil(t, ids)
+}
+
 func TestSuccessIsMutual(t *testing.T) {
 	db, cleanup := setupDB(t)
 	defer cleanup()
@@ -175,11 +183,11 @@ func TestNoEqualIsMutual(t *testing.T) {
 	}
 	err := repo.AddLike(context.Background(), like)
 	assert.NoError(t, err)
-	like = &models.Like{
-		UserId:  "456",
-		LikedId: "123",
-	}
 	//второго не будет
+	//like = &models.Like{
+	//	UserId:  "456",
+	//	LikedId: "123",
+	//}
 	//err = repo.AddLike(context.Background(), like)
 	assert.NoError(t, err)
 	isMutual, err := repo.IsMutual(context.Background(), like)

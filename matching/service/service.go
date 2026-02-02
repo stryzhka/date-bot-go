@@ -5,6 +5,8 @@ import (
 	"date-bot-go/matching"
 	"date-bot-go/matching/client"
 	"date-bot-go/matching/models"
+	"math/rand/v2"
+	"slices"
 )
 
 type MatchingService struct {
@@ -28,6 +30,9 @@ func (s *MatchingService) Like(ctx context.Context, userId, likedId string) erro
 		UserId:  likedId,
 		LikedId: userId,
 	}
+
+	//TODO: колхоз!!!
+	err := s.r.AddLike(ctx, like)
 	mutual, err := s.r.IsMutual(ctx, like)
 	if err != nil {
 		return err
@@ -39,13 +44,30 @@ func (s *MatchingService) Like(ctx context.Context, userId, likedId string) erro
 		err = s.r.DeleteLike(ctx, like1)
 		return err
 	}
-	err = s.r.AddLike(ctx, like)
 	//--notify likedId!
 	//--next profile
 	return err
 }
 
+// TODO: другой алгоримт
 func (s *MatchingService) NextProfile(ctx context.Context, userId string) (*models.Profile, error) {
-	//???
-	return s.profileProvider.GetCandidate(ctx, userId)
+	userLikes := s.r.GetUserLikes(ctx, userId)
+	users, err := s.profileProvider.GetCandidates(ctx)
+	var filtered []models.Profile
+	if err != nil {
+		return nil, err
+	}
+	for _, user := range users {
+		if !slices.Contains(userLikes, user.UserId) && user.UserId != userId {
+			filtered = append(filtered, user)
+		}
+	}
+	l := len(filtered)
+	index := l
+	if l > 0 {
+		index = rand.IntN(l)
+		return &filtered[index], nil
+	}
+	//но так не должно быть
+	return nil, nil
 }

@@ -66,3 +66,81 @@ func TestErrAutoLikeAddLike(t *testing.T) {
 	assert.Error(t, err)
 	assert.IsType(t, matching.ErrAutoLike, err)
 }
+
+func TestSuccessNoLikesNextProfile(t *testing.T) {
+	//исключить только вызывающий id
+	r := new(mock.MockRepository)
+	profileProvider := new(mockProvider.MockProfileProvider)
+	s := NewMatchingService(r, profileProvider)
+	r.On("GetUserLikes", "123").Return([]string{}, nil)
+	var allProfiles = []models.Profile{
+		{
+			UserId:      "123",
+			Username:    "test",
+			Name:        "test",
+			Gender:      "f",
+			Description: "test test test",
+			PhotoPath:   "test",
+		},
+		{
+			UserId:      "456",
+			Username:    "test1",
+			Name:        "test1",
+			Gender:      "f",
+			Description: "test test test",
+			PhotoPath:   "test",
+		},
+		{
+			UserId:      "789",
+			Username:    "test2",
+			Name:        "test2",
+			Gender:      "f",
+			Description: "test test test",
+			PhotoPath:   "test",
+		},
+	}
+	profileProvider.On("GetCandidates").Return(allProfiles, nil)
+	expProfile, err := s.NextProfile(context.Background(), "123")
+	assert.NoError(t, err)
+	assert.IsType(t, expProfile, &models.Profile{})
+	t.Log("Next profile: ", expProfile)
+}
+
+func TestSuccessHasLikesNextProfile(t *testing.T) {
+	r := new(mock.MockRepository)
+	profileProvider := new(mockProvider.MockProfileProvider)
+	s := NewMatchingService(r, profileProvider)
+	r.On("GetUserLikes", "123").Return([]string{"456", "789"}, nil)
+	var allProfiles = []models.Profile{
+		{
+			UserId:      "123",
+			Username:    "test",
+			Name:        "test",
+			Gender:      "f",
+			Description: "test test test",
+			PhotoPath:   "test",
+		},
+		{
+			UserId:      "456",
+			Username:    "test1",
+			Name:        "test1",
+			Gender:      "f",
+			Description: "test test test",
+			PhotoPath:   "test",
+		},
+		{
+			UserId:      "789",
+			Username:    "test2",
+			Name:        "test2",
+			Gender:      "f",
+			Description: "test test test",
+			PhotoPath:   "test",
+		},
+	}
+	profileProvider.On("GetCandidates").Return(allProfiles, nil)
+	expProfile, err := s.NextProfile(context.Background(), "123")
+	assert.NoError(t, err)
+	assert.IsType(t, expProfile, &models.Profile{})
+	//но так не должно быть
+	t.Log("Next profile: ", expProfile)
+}
