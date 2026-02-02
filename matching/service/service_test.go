@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"date-bot-go/matching"
 	mockProvider "date-bot-go/matching/client/mock"
 	"date-bot-go/matching/models"
 	"date-bot-go/matching/repository/mock"
@@ -50,4 +51,18 @@ func TestNextProfile(t *testing.T) {
 	expectedProfile, err := s.NextProfile(context.Background(), userId)
 	assert.NoError(t, err)
 	assert.IsType(t, expectedProfile, &models.Profile{})
+}
+
+func TestErrAutoLikeAddLike(t *testing.T) {
+	r := new(mock.MockRepository)
+	profileProvider := new(mockProvider.MockProfileProvider)
+	s := NewMatchingService(r, profileProvider)
+	expectedLike := &models.Like{
+		UserId:  "123",
+		LikedId: "123",
+	}
+	r.On("AddLike", expectedLike).Return(nil)
+	err := s.Like(context.Background(), "123", "123")
+	assert.Error(t, err)
+	assert.IsType(t, matching.ErrAutoLike, err)
 }

@@ -40,7 +40,7 @@ func (r *PostgresMatchingRepository) AddLike(ctx context.Context, like *models.L
 func (r *PostgresMatchingRepository) DeleteLike(ctx context.Context, like *models.Like) error {
 	//оди
 	result, err := r.db.Exec(
-		`DELETE FROM likes WHERE user_id = $1`,
+		`delete from likes where user_id = $1`,
 		like.UserId, like.LikedId,
 	)
 	if err != nil {
@@ -59,16 +59,32 @@ func (r *PostgresMatchingRepository) DeleteLike(ctx context.Context, like *model
 	return nil
 }
 
+func (r *PostgresMatchingRepository) GetUserLikes(ctx context.Context, userId string) []string {
+	rows, err := r.db.Query(`select liked_id from likes where user_id = $1`, userId)
+	if err != nil {
+		return nil
+	}
+	var userLikes []string
+	for rows.Next() {
+		var likedId string
+		if err := rows.Scan(&likedId); err != nil {
+			return nil
+		}
+		userLikes = append(userLikes, likedId)
+	}
+	return userLikes
+}
+
 func (r *PostgresMatchingRepository) IsMutual(ctx context.Context, like *models.Like) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
-		`SELECT EXISTS(
-            SELECT 1
-            FROM likes l1
-            INNER JOIN likes l2 
-                ON l1.user_id = l2.liked_id 
-                AND l1.liked_id = l2.user_id
-            WHERE l1.user_id = $1 AND l1.liked_id = $2
+		`select exists(
+            select 1
+            from likes l1
+            inner join likes l2 
+                on l1.user_id = l2.liked_id 
+                and l1.liked_id = l2.user_id
+            where l1.user_id = $1 and l1.liked_id = $2
         )`, like.UserId, like.LikedId,
 	).Scan(&exists)
 

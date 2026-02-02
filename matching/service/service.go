@@ -17,6 +17,9 @@ func NewMatchingService(r matching.Repository, profileProvider client.ProfilePro
 }
 
 func (s *MatchingService) Like(ctx context.Context, userId, likedId string) error {
+	if userId == likedId {
+		return matching.ErrAutoLike
+	}
 	like := &models.Like{
 		UserId:  userId,
 		LikedId: likedId,

@@ -114,6 +114,36 @@ func TestErrLikeNotFoundDeleteLike(t *testing.T) {
 	assert.IsType(t, matching.ErrLikeNotFound, err)
 }
 
+func TestSuccessGetUserLikes(t *testing.T) {
+	db, cleanup := setupDB(t)
+	defer cleanup()
+	repo := NewPostgresMatchingRepository(db)
+	like := &models.Like{
+		UserId:  "123",
+		LikedId: "456",
+	}
+	err := repo.AddLike(context.Background(), like)
+	assert.NoError(t, err)
+	like = &models.Like{
+		UserId:  "123",
+		LikedId: "789",
+	}
+	err = repo.AddLike(context.Background(), like)
+	assert.NoError(t, err)
+	like = &models.Like{
+		UserId:  "123",
+		LikedId: "321",
+	}
+	err = repo.AddLike(context.Background(), like)
+	assert.NoError(t, err)
+	userLikes := repo.GetUserLikes(context.Background(), like.UserId)
+
+	assert.Len(t, userLikes, 3)
+	assert.Contains(t, userLikes, "456")
+	assert.Contains(t, userLikes, "789")
+	assert.Contains(t, userLikes, "321")
+}
+
 func TestSuccessIsMutual(t *testing.T) {
 	db, cleanup := setupDB(t)
 	defer cleanup()
