@@ -14,14 +14,18 @@ func (s *MockService) Create(
 	ctx context.Context, userId, name, gender, description string,
 ) error {
 	args := s.Called(ctx, userId, name, gender, description)
+	if args.Get(0) == nil {
+		return nil
+	}
 	return args.Error(0)
 }
 
 func (s *MockService) GetById(ctx context.Context, id string) *models.Profile {
-	args := s.Called(ctx, id)
+	args := s.Called(id)
 	if args.Get(0) == nil {
 		return nil
 	}
+	//TODO: видимо это и в других тестах
 	return args.Get(0).(*models.Profile)
 }
 
