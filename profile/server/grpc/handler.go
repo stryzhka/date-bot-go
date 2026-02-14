@@ -3,15 +3,15 @@ package grpc
 import (
 	"context"
 	"date-bot-go/pkg/profilepb"
-	"date-bot-go/profile/services"
+	"date-bot-go/profile/service"
 )
 
 type ProfileHandler struct {
 	profilepb.UnimplementedProfileServiceServer
-	s *services.ProfileService
+	s service.ProfileService
 }
 
-func NewProfileHandler(s *services.ProfileService) *ProfileHandler {
+func NewProfileHandler(s service.ProfileService) *ProfileHandler {
 	return &ProfileHandler{s: s}
 }
 

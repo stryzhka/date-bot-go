@@ -12,6 +12,6 @@ type Profile struct {
 	Gender      string    `json:"gender"`
 	Description string    `json:"description"`
 	Topics      []Topic   `json:"topics"`
-	DateCreated time.Time `json:"dateCreated"`
-	PhotoPath   string    `json:"photoPath"`
+	DateCreated time.Time `json:"date_created"`
+	PhotoPath   string    `json:"photo_path"`
 }

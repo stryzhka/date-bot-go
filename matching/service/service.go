@@ -5,6 +5,7 @@ import (
 	"date-bot-go/matching"
 	"date-bot-go/matching/client"
 	"date-bot-go/matching/models"
+	"log"
 	"math/rand/v2"
 	"slices"
 )
@@ -40,10 +41,12 @@ func (s *MatchingService) Like(ctx context.Context, userId, likedId string) erro
 	if mutual {
 		//--send link to likedId
 		//--send link to userId
+		log.Println("stab: mutual match: ", userId, ", ", likedId)
 		err = s.r.DeleteLike(ctx, like)
 		err = s.r.DeleteLike(ctx, like1)
 		return err
 	}
+	log.Println("stab: ", likedId, " got like from ", userId)
 	//--notify likedId!
 	//--next profile
 	return err

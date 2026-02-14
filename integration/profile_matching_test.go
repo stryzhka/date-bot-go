@@ -10,7 +10,7 @@ import (
 	"date-bot-go/pkg/profilepb"
 	"date-bot-go/profile/repository"
 	grpc2 "date-bot-go/profile/server/grpc"
-	"date-bot-go/profile/services"
+	"date-bot-go/profile/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -83,7 +83,7 @@ func TestCall(t *testing.T) {
 	defer cleanup()
 	lis := bufconn.Listen(1024 * 1024)
 	profileRepository := repository.NewPostgresProfileRepository(db)
-	profileService := services.NewProfileService(profileRepository)
+	profileService := service.NewProfileService(profileRepository)
 	profileHandler := grpc2.NewProfileHandler(profileService)
 	grpcServer := grpc.NewServer()
 	profilepb.RegisterProfileServiceServer(grpcServer, profileHandler)
@@ -145,7 +145,7 @@ func TestProfileMatchingFlow(t *testing.T) {
 	defer cleanup()
 	lis := bufconn.Listen(1024 * 1024)
 	profileRepository := repository.NewPostgresProfileRepository(db)
-	profileService := services.NewProfileService(profileRepository)
+	profileService := service.NewProfileService(profileRepository)
 	profileHandler := grpc2.NewProfileHandler(profileService)
 	grpcServer := grpc.NewServer()
 	profilepb.RegisterProfileServiceServer(grpcServer, profileHandler)
@@ -185,9 +185,12 @@ func TestProfileMatchingFlow(t *testing.T) {
 	assert.NoError(t, err)
 	err = matchingService.Like(ctx, "123", "456")
 	assert.NoError(t, err)
-	err = matchingService.Like(ctx, "123", "456")
+	expProfile, err = matchingService.NextProfile(ctx, "123")
+	assert.NoError(t, err)
+	assert.IsType(t, expProfile, &models.Profile{})
+	err = matchingService.Like(ctx, "123", expProfile.UserId)
 
 	assert.NoError(t, err)
-	err = matchingService.Like(ctx, "456", "123")
+	err = matchingService.Like(ctx, expProfile.UserId, "123")
 	assert.NoError(t, err)
 }
