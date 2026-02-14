@@ -8,10 +8,10 @@ import (
 
 type ProfileHandler struct {
 	profilepb.UnimplementedProfileServiceServer
-	s *service.ProfileService
+	s service.ProfileService
 }
 
-func NewProfileHandler(s *service.ProfileService) *ProfileHandler {
+func NewProfileHandler(s service.ProfileService) *ProfileHandler {
 	return &ProfileHandler{s: s}
 }
 

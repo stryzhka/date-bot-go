@@ -6,6 +6,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type errorMessage struct {
@@ -22,6 +26,26 @@ type ProfileDto struct {
 	Gender      string `json:"gender"`
 	Description string `json:"description"`
 	PhotoPath   string `json:"photo_path"`
+}
+
+func validate(parsedProfileDto *ProfileDto) error {
+	if len(parsedProfileDto.Name) >= 15 {
+		return profile.ErrValidationName
+	}
+	if strings.TrimSpace(parsedProfileDto.Gender) == "" {
+		return profile.ErrValidationGender
+	}
+	if strings.TrimSpace(parsedProfileDto.Name) == "" {
+		return profile.ErrValidationName
+	}
+
+	if strings.TrimSpace(parsedProfileDto.UserId) == "" {
+		return profile.ErrValidationUserId
+	}
+	if len(parsedProfileDto.Description) >= 128 {
+		return profile.ErrValidationDescription
+	}
+	return nil
 }
 
 type Handler struct {
@@ -48,9 +72,10 @@ func (h *Handler) GetAll(w http.ResponseWriter, req *http.Request) {
 	var profiles []models.Profile
 	profiles = h.s.GetAll(req.Context())
 	jsonProfiles, err := json.Marshal(profiles)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err != nil {
-		jsonProfiles = nil
+		jsonProfiles = []byte("[]")
 	}
 	w.Write(jsonProfiles)
 	return
@@ -65,12 +90,12 @@ func (h *Handler) GetAll(w http.ResponseWriter, req *http.Request) {
 // // @Failure 401
 // @Router /api/profile/{id} [get]
 func (h *Handler) GetById(w http.ResponseWriter, req *http.Request) {
-	id := req.PathValue("id")
+	id := mux.Vars(req)["id"]
 	jsonProfile, err := json.Marshal(h.s.GetById(req.Context(), id))
 	if err != nil {
-		//TODO: это неправильно
-		jsonProfile = nil
+		jsonProfile = []byte("{}")
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonProfile)
 }
@@ -79,48 +104,27 @@ func (h *Handler) GetById(w http.ResponseWriter, req *http.Request) {
 // @Summary Create new profile
 // @Tags profile
 // // @Security ApiKeyAuth
+// @Accepts json ProfileDto
 // @Produce json
-// @Success 200 models.Profile
+// @Success 201
 // // @Failure 401
 // @Failure 400
 // @Router /api/profile/ [post]
 func (h *Handler) Create(w http.ResponseWriter, req *http.Request) {
-	//TODO: что то здесь не так...
+
+	//TODO: вроде ща все так...
 	var parsedProfileDto ProfileDto
 	err := json.NewDecoder(req.Body).Decode(&parsedProfileDto)
+	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		msg, _ := json.Marshal(&errorMessage{Error: "can't parse json"})
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(msg)
 		return
 	}
-	if len(parsedProfileDto.Name) >= 15 {
-		msg, _ := json.Marshal(&errorMessage{Error: "name is too long"})
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(msg)
-		return
-	}
-	if strings.TrimSpace(parsedProfileDto.Gender) == "" {
-		msg, _ := json.Marshal(&errorMessage{Error: "gender can't be empty"})
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(msg)
-		return
-	}
-	if strings.TrimSpace(parsedProfileDto.Name) == "" {
-		msg, _ := json.Marshal(&errorMessage{Error: "name can't be empty"})
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(msg)
-		return
-	}
-
-	if strings.TrimSpace(parsedProfileDto.UserId) == "" {
-		msg, _ := json.Marshal(&errorMessage{Error: "user_id can't be empty"})
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(msg)
-		return
-	}
-	if len(parsedProfileDto.Description) >= 128 {
-		msg, _ := json.Marshal(&errorMessage{Error: "description is too long"})
+	err = validate(&parsedProfileDto)
+	if err != nil {
+		msg, _ := json.Marshal(&errorMessage{Error: err.Error()})
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(msg)
 		return
@@ -135,6 +139,75 @@ func (h *Handler) Create(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusCreated) //TODO: но ваще кстати можно просто отправить созданный профиль
 }
 
-//func (h *Handler) Create(w http.ResponseWriter, req *http.Request) {
-//	ctx := req.Context()
-//}
+// Update godoc
+// @Summary Update profile by id
+// @Tags profile
+// // @Security ApiKeyAuth
+// @Accepts json ProfileDto
+// @Produce json
+// @Success 200
+// // @Failure 401
+// @Failure 400
+// @Router /api/profile/{id} [put]
+func (h *Handler) Update(w http.ResponseWriter, req *http.Request) {
+	id := mux.Vars(req)["id"]
+	var parsedProfileDto ProfileDto
+	err := json.NewDecoder(req.Body).Decode(&parsedProfileDto)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		msg, _ := json.Marshal(&errorMessage{Error: "can't parse json"})
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(msg)
+		return
+	}
+	err = validate(&parsedProfileDto)
+	if err != nil {
+		msg, _ := json.Marshal(&errorMessage{Error: err.Error()})
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(msg)
+		return
+	}
+	//todo: кажется тут вообще надо просто параметры а не модель
+	newProfile := &models.Profile{
+		Id:          uuid.Nil,
+		UserId:      parsedProfileDto.UserId,
+		Name:        parsedProfileDto.Name,
+		Gender:      parsedProfileDto.Gender,
+		Description: parsedProfileDto.Description,
+		Topics:      nil,
+		DateCreated: time.Time{},
+		PhotoPath:   parsedProfileDto.PhotoPath,
+	}
+	err = h.s.UpdateById(req.Context(), id, newProfile)
+	if err != nil {
+		msg, _ := json.Marshal(&errorMessage{Error: err.Error()})
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(msg)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// Delete godoc
+// @Summary Delete profile by id
+// @Tags profile
+// // @Security ApiKeyAuth
+// @Accepts json ProfileDto
+// @Produce json
+// @Success 200
+// // @Failure 401
+// @Failure 400
+// @Router /api/profile/{id} [delete]
+func (h *Handler) Delete(w http.ResponseWriter, req *http.Request) {
+	id := mux.Vars(req)["id"]
+	err := h.s.DeleteById(req.Context(), id)
+	var msg []byte
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		msg, _ = json.Marshal(errorMessage{Error: err.Error()})
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(msg)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}

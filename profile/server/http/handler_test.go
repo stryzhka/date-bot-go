@@ -9,14 +9,15 @@ import (
 	profileMock "date-bot-go/profile/service/mock"
 	"encoding/json"
 	"errors"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	mock2 "github.com/stretchr/testify/mock"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	mock2 "github.com/stretchr/testify/mock"
 )
 
 func TestHealthcheck(t *testing.T) {
@@ -111,19 +112,19 @@ func TestSuccessGetById(t *testing.T) {
 }
 
 func TestFailValidationCreate(t *testing.T) {
-	incorrectProfileDto := &ProfileDto{
-		UserId:      "",
-		Name:        "",
-		Gender:      "",
-		Description: "",
-		PhotoPath:   "",
-	}
-	jsonIncorrectProfileDto, err := json.Marshal(incorrectProfileDto)
-	log.Println(string(jsonIncorrectProfileDto))
-	assert.NoError(t, err)
+	//incorrectProfileDto := &ProfileDto{
+	//	UserId:      "",
+	//	Name:        "",
+	//	Gender:      "",
+	//	Description: "",
+	//	PhotoPath:   "",
+	//}
+	jsonIncorrectProfileDto := "{iuojo"
+	log.Println(jsonIncorrectProfileDto)
+	//assert.NoError(t, err)
 	s := new(profileMock.MockService)
 	h := NewHandler(s)
-	req := httptest.NewRequest(http.MethodPost, "/api/profile/", bytes.NewReader(jsonIncorrectProfileDto))
+	req := httptest.NewRequest(http.MethodPost, "/api/profile/", bytes.NewBufferString(jsonIncorrectProfileDto))
 	w := httptest.NewRecorder()
 	s.On("Create", "", "", "", "", "").Return(errors.New("test error"))
 	h.Create(w, req)
@@ -238,5 +239,141 @@ func TestSuccessCreate(t *testing.T) {
 	s.On("Create", mock2.Anything, "123", "test", "f", "").Return(nil)
 	h.Create(w, req)
 	assert.Equal(t, http.StatusCreated, w.Code)
+	log.Println(w.Body.String())
+}
+
+func TestFailUserNotFoundUpdate(t *testing.T) {
+	incorrectProfileDto := &ProfileDto{
+		UserId:      "123",
+		Name:        "test",
+		Gender:      "f",
+		Description: "",
+		PhotoPath:   "",
+	}
+	expProfile := &models.Profile{
+		Id:          uuid.Nil,
+		UserId:      "123",
+		Name:        "test",
+		Gender:      "f",
+		Description: "",
+		Topics:      nil,
+		DateCreated: time.Time{},
+		PhotoPath:   "",
+	}
+	jsonIncorrectProfileDto, err := json.Marshal(incorrectProfileDto)
+	log.Println(string(jsonIncorrectProfileDto))
+	assert.NoError(t, err)
+	s := new(profileMock.MockService)
+	s.On("UpdateById", mock2.Anything, "", expProfile).Return(profile.ErrUserNotFound)
+	h := NewHandler(s)
+	req := httptest.NewRequest(http.MethodPost, "/api/profile/", bytes.NewReader(jsonIncorrectProfileDto))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Update(w, req)
+	log.Println(w.Body)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestFailValidationUpdate(t *testing.T) {
+	//incorrectProfileDto := &ProfileDto{
+	//	UserId:      "",
+	//	Name:        "",
+	//	Gender:      "",
+	//	Description: "",
+	//	PhotoPath:   "",
+	//}
+	incorrectProfileDto := &ProfileDto{
+		UserId:      "123",
+		Name:        "test",
+		Gender:      "f",
+		Description: "",
+		PhotoPath:   "",
+	}
+	expProfile := &models.Profile{
+		Id:          uuid.Nil,
+		UserId:      "123",
+		Name:        "test",
+		Gender:      "f",
+		Description: "",
+		Topics:      nil,
+		DateCreated: time.Time{},
+		PhotoPath:   "",
+	}
+	jsonIncorrectProfileDto := "{iuojo"
+	log.Println(jsonIncorrectProfileDto)
+	//assert.NoError(t, err)
+	s := new(profileMock.MockService)
+	h := NewHandler(s)
+	req := httptest.NewRequest(http.MethodPost, "/api/profile/", bytes.NewBufferString(jsonIncorrectProfileDto))
+	w := httptest.NewRecorder()
+	s.On("Create", "", "", "", "", "").Return(errors.New("test error"))
+	h.Create(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	log.Println(w.Body.String())
+}
+
+func TestFailValidationGenderCreate(t *testing.T) {
+	incorrectProfileDto := &ProfileDto{
+		UserId:      "",
+		Name:        "",
+		Gender:      "",
+		Description: "",
+		PhotoPath:   "",
+	}
+	jsonIncorrectProfileDto, err := json.Marshal(incorrectProfileDto)
+	log.Println(string(jsonIncorrectProfileDto))
+	assert.NoError(t, err)
+	s := new(profileMock.MockService)
+	h := NewHandler(s)
+	req := httptest.NewRequest(http.MethodPost, "/api/profile/", bytes.NewReader(jsonIncorrectProfileDto))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.On("Create", "", "", "", "", "").Return(errors.New("test error"))
+	h.Create(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	log.Println(w.Body.String())
+}
+
+func TestFailValidationNameCreate(t *testing.T) {
+	incorrectProfileDto := &ProfileDto{
+		UserId:      "",
+		Name:        "",
+		Gender:      "f",
+		Description: "",
+		PhotoPath:   "",
+	}
+	jsonIncorrectProfileDto, err := json.Marshal(incorrectProfileDto)
+	log.Println(string(jsonIncorrectProfileDto))
+	assert.NoError(t, err)
+	s := new(profileMock.MockService)
+	h := NewHandler(s)
+	req := httptest.NewRequest(http.MethodPost, "/api/profile/", bytes.NewReader(jsonIncorrectProfileDto))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.On("Create", "", "", "", "", "").Return(errors.New("test error"))
+	h.Create(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	log.Println(w.Body.String())
+}
+
+func TestFailValidationUserIdCreate(t *testing.T) {
+	incorrectProfileDto := &ProfileDto{
+		UserId:      "",
+		Name:        "test",
+		Gender:      "f",
+		Description: "",
+		PhotoPath:   "",
+	}
+	jsonIncorrectProfileDto, err := json.Marshal(incorrectProfileDto)
+	log.Println(string(jsonIncorrectProfileDto))
+	assert.NoError(t, err)
+	s := new(profileMock.MockService)
+	h := NewHandler(s)
+	req := httptest.NewRequest(http.MethodPost, "/api/profile/", bytes.NewReader(jsonIncorrectProfileDto))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.On("Create", "", "", "", "", "").Return(errors.New("test error"))
+	h.Create(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 	log.Println(w.Body.String())
 }
